@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Cac Authentication</title>
+    <script src="https://alcdn.msauth.net/browser/2.17.0/js/msal-browser.min.js"></script>
+    <script>
+        var msalConfig = {
+            auth: {
+                clientId: '99419f89-bccd-4ff7-9075-b088d33967ce',
+                authority: 'https://login.microsoftonline.com/44f5f615-327a-4d5a-86d5-c9251297d7e4',
+                redirectUri: 'https://localhost:7122/'
+            }
+        };
+        var msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        function login() {
+            msalInstance.loginRedirect({ scopes: ["user.read"] });
+        }
+
+        msalInstance.handleRedirectPromise().then(function (response) {
+            if (response) {
+                var account = msalInstance.getAllAccounts()[0];
+                msalInstance.setActiveAccount(account);
+                msalInstance.acquireTokenSilent({ scopes: ["user.read"], account: account }).then(function (accessTokenResponse) {
+                    fetch('https://localhost:7122/Authenticate', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessTokenResponse.accessToken}`
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById("output").innerText = JSON.stringify(data);
+                    })
+                    .catch(error => {
+                        document.getElementById("output").innerText = "Error: " + error;
+                    });
+                });
+            }
+        }).catch(function (error) {
+            document.getElementById("output").innerText = "Error: " + error;
+        });
+    </script>
+</head>
+<body>
+    <button onclick="login()">Login to Office 365</button>
+    <h1>Output</h1>
+    <div id="output"></div>
+</body>
+</html>
